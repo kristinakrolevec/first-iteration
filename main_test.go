@@ -68,12 +68,14 @@ func TestCafeCount(t *testing.T) {
 			req := httptest.NewRequest("GET", "/cafe?city="+city+"&count="+strconv.Itoa(v.count), nil)
 			handler.ServeHTTP(response, req)
 			require.Equal(t, http.StatusOK, response.Code)
-			//if strings.Split(strings.TrimSpace(response.Body.String()), ",") ==[""] {
-			if response.Body.String() == "" {
-				assert.Equal(t, v.want, 0)
-			} else {
-				assert.Equal(t, v.want, len(strings.Split(strings.TrimSpace(response.Body.String()), ",")))
+
+			res := strings.TrimSpace(response.Body.String())
+			if v.count == 0 {
+				assert.Empty(t, res)
+				continue
 			}
+
+			assert.Len(t, strings.Split(res, ","), v.want)
 
 		}
 	}
@@ -93,15 +95,21 @@ func TestCafeSearch(t *testing.T) {
 		response := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/cafe?city=moscow&search="+v.search, nil)
 		handler.ServeHTTP(response, req)
-		resp := strings.Split(strings.TrimSpace(response.Body.String()), ",")
+
+		require.Equal(t, http.StatusOK, response.Code)
+
+		res := strings.TrimSpace(response.Body.String())
+		resp := strings.Split(res, ",")
+
+		if v.wantCount == 0 {
+			assert.Empty(t, res)
+			continue
+		}
+		assert.Len(t, resp, v.wantCount)
+
 		for _, c := range resp {
-			strings.Contains(c, v.search)
+			assert.Contains(t, strings.ToLower(c), v.search)
 		}
 
-		if response.Body.String() == "" {
-			assert.Equal(t, v.wantCount, 0)
-		} else {
-			assert.Equal(t, v.wantCount, len(strings.Split(strings.TrimSpace(response.Body.String()), ",")))
-		}
 	}
 }
